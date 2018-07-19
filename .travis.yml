@@ -1,0 +1,12 @@
+language: clojure
+lein: 2.8.1
+node_js:
+  - "8"
+jdk:
+  - oraclejdk8
+  - oraclejdk9
+  - oraclejdk10
+  - oraclejdk-ea
+branches:
+  only:
+    - master
