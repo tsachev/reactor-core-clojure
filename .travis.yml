@@ -6,7 +6,6 @@ jdk:
   - oraclejdk8
   - oraclejdk9
   - oraclejdk10
-  - oraclejdk-ea
 script:
   - lein cljsbuild test publisher
   - lein cloverage --codecov
