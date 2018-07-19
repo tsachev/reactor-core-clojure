@@ -4,9 +4,11 @@ node_js:
   - "8"
 jdk:
   - oraclejdk8
-#  - oraclejdk9
-#  - oraclejdk10
-#  - oraclejdk-ea
-branches:
-  only:
-    - master
+  - oraclejdk9
+  - oraclejdk10
+  - oraclejdk-ea
+script:
+  - lein cljsbuild test publisher
+  - lein cloverage --codecov
+after_success:
+ - bash <(curl -s https://codecov.io/bash) -f target/coverage/codecov.json
