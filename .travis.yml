@@ -1,5 +1,6 @@
 language: clojure
 lein: 2.8.1
+sudo: false
 node_js:
   - "8"
 jdk:
