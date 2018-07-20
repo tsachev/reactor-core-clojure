@@ -20,18 +20,18 @@
   :license {:name         "The Apache Software License, Version 2.0"
             :url          "https://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
-  :plugins [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
-  :cljsbuild {:test-commands {"publisher" ["node" "target/publisher-tests.js"]}
-              :builds        {:test {:source-paths   ["src" "test"]
-                                     :notify-command ["node" "target/publisher-tests.js"]
-                                     :compiler       {:npm-deps      {:reactor-core-js "0.5.0"}
-                                                      :install-deps  true
-                                                      :output-to     "target/publisher-tests.js"
-                                                      :optimizations :none
-                                                      :target        :nodejs
-                                                      :main          reactor-core.publisher-test}}}}
   :dependencies [[org.clojure/clojure "1.9.0" :scope "provided"]
-                 [org.clojure/clojurescript "1.10.339" :scope "provided"]
                  [io.projectreactor/reactor-core "3.1.8.RELEASE"]]
-  :profiles {:dev {:dependencies [[com.fzakaria/slf4j-timbre "0.3.12"]]
-                   :plugins [[lein-cloverage "1.0.11"]]}})
+  :profiles {:cljs {:dependencies [[org.clojure/clojurescript "1.10.339" :scope "provided"]]
+                    :plugins      [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
+                    :cljsbuild    {:test-commands {"publisher" ["node" "target/publisher-tests.js"]}
+                                   :builds        {:test {:source-paths   ["src" "test"]
+                                                          :notify-command ["node" "target/publisher-tests.js"]
+                                                          :compiler       {:npm-deps      {:reactor-core-js "0.5.0"}
+                                                                           :install-deps  true
+                                                                           :output-to     "target/publisher-tests.js"
+                                                                           :optimizations :none
+                                                                           :target        :nodejs
+                                                                           :main          reactor-core.publisher-test}}}}}
+             :dev  {:dependencies [[com.fzakaria/slf4j-timbre "0.3.12"]]
+                    :plugins      [[lein-cloverage "1.0.11"]]}})
