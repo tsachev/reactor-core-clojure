@@ -22,7 +22,9 @@
             :distribution :repo}
   :dependencies [[org.clojure/clojure "1.9.0" :scope "provided"]
                  [io.projectreactor/reactor-core "3.1.8.RELEASE"]]
-  :profiles {:cljs {:dependencies [[org.clojure/clojurescript "1.10.339" :scope "provided"]]
+  :target-path "target/%s"
+  :profiles {:1.8  {:dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]]}
+             :cljs {:dependencies [[org.clojure/clojurescript "1.10.339" :scope "provided"]]
                     :plugins      [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
                     :cljsbuild    {:test-commands {"publisher" ["node" "target/publisher-tests.js"]}
                                    :builds        {:test {:source-paths   ["src" "test"]
