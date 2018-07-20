@@ -29,11 +29,11 @@
                     :cljsbuild    {:test-commands {"publisher" ["node" "target/publisher-tests.js"]}
                                    :builds        {:test {:source-paths   ["src" "test"]
                                                           :notify-command ["node" "target/publisher-tests.js"]
-                                                          :compiler       {:npm-deps      {:reactor-core-js "0.5.0"}
-                                                                           :install-deps  true
+                                                          :compiler       {:install-deps  true
                                                                            :output-to     "target/publisher-tests.js"
                                                                            :optimizations :none
                                                                            :target        :nodejs
                                                                            :main          reactor-core.publisher-test}}}}}
              :dev  {:dependencies [[com.fzakaria/slf4j-timbre "0.3.12"]]
                     :plugins      [[lein-cloverage "1.0.11"]]}})
+
