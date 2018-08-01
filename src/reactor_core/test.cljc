@@ -15,17 +15,18 @@
 ;
 
 (ns
-  ^{:doc    ""
+  ^{:doc    "A unit testing support."
     :author "Vladimir Tsanev"}
   reactor-core.test)
 
-(defmacro async
-  "Support async tests like cljs.test/async on jvm"
-  [done & body]
-  `(let [p# (promise)
-         ~done (fn []
-                 (if (realized? p#)
-                   (println "WARNING: Async test called done more than one time.")
-                   (deliver p# nil)))]
-     ~@body
-     @p#))
+#?(:clj
+   (defmacro async
+     "Support async tests like cljs.test/async on jvm"
+     [done & body]
+     `(let [p# (promise)
+            ~done (fn []
+                    (if (realized? p#)
+                      (println "WARNING: Async test called done more than one time.")
+                      (deliver p# nil)))]
+        ~@body
+        @p#)))

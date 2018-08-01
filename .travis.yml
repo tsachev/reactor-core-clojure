@@ -6,7 +6,7 @@ node_js:
 jdk:
   - oraclejdk8
 script:
-  - lein with-profile +cljs cljsbuild test publisher
+  - lein with-profile +cljs cljsbuild test run
   - lein with-profile 1.8 test
   - lein cloverage --codecov
 after_success:

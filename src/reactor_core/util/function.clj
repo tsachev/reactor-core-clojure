@@ -15,30 +15,43 @@
 ;
 
 (ns
-  ^{:doc    ""
+  ^{:doc    "Converters from clojure functions to various java SAM interfaces."
     :author "Vladimir Tsanev"}
-  reactor-core.util
+  reactor-core.util.function
   (:import
-    (java.util.function Consumer BiFunction Predicate Function)))
-
-(defn noop
-  [& _])
+    (java.util.function Consumer BiFunction Predicate Function LongFunction BiPredicate LongConsumer Supplier BooleanSupplier BiConsumer)))
 
 (defn as-predicate
   [p]
   (if (or (nil? p) (instance? Predicate p)) p (reify Predicate (test [_ t] (p t)))))
 
+(defn as-bi-predicate
+  [p]
+  (if (or (nil? p) (instance? BiPredicate p)) p (reify BiPredicate (test [_ t u] (p t u)))))
+
 (defn as-function
   [f]
   (if (or (nil? f) (instance? Function f)) f (reify Function (apply [_ t] (f t)))))
 
-(defn as-bi-function
+(defn as-long-function
+  [f]
+  (if (or (nil? f) (instance? LongFunction f)) f (reify LongFunction (apply [_ value] (f value)))))
+
+(defn ^BiFunction as-bi-function
   [f]
   (if (or (nil? f) (instance? BiFunction f)) f (reify BiFunction (apply [_ t u] (f t u)))))
 
 (defn as-consumer
   [c]
   (if (or (nil? c) (instance? Consumer c)) c (reify Consumer (accept [_ t] (c t)))))
+
+(defn as-long-consumer
+  [c]
+  (if (or (nil? c) (instance? LongConsumer c)) c (reify LongConsumer (accept [_ value] (c value)))))
+
+(defn as-bi-consumer
+  [c]
+  (if (or (nil? c) (instance? BiConsumer c)) c (reify BiConsumer (accept [_ t u] (c t u)))))
 
 (defn as-runnable
   [r]
@@ -47,3 +60,11 @@
 (defn as-callable
   [c]
   (if (or (nil? c) (instance? Callable c)) c (reify Callable (call [_] (c)))))
+
+(defn as-supplier
+  [s]
+  (if (or (nil? s) (instance? Supplier s)) s (reify Supplier (get [_] (s)))))
+
+(defn as-boolean-supplier
+  [s]
+  (if (or (nil? s) (instance? BooleanSupplier s)) s (reify BooleanSupplier (getAsBoolean [_] (s)))))

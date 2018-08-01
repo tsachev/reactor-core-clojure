@@ -14,38 +14,73 @@
 ; limitations under the License.
 ;
 
-(ns reactor-core.publisher-test
+(ns
+  ^{:doc    "A test-case for reactor-core.publisher."
+    :author "Vladimir Tsanev"}
+  reactor-core.publisher-test
   #?(:cljs (:require-macros [cljs.test :refer [async]])
      :clj
            (:use [reactor-core.test :only [async]]))
   (:require #?(:cljs [cljs.test :as t]
                :clj [clojure.test :as t])
-                    [clojure.core.reducers :as r]
                     [reactor-core.publisher :as p]))
 
-#?(:cljs (enable-console-print!))
+#?(:cljs (set! *warn-on-infer* true)
+   :clj  (set! *warn-on-reflection* true))
 
 (t/deftest range-test
   (t/testing "consume range."
     (async done
-      (let [cnt (atom [])]
+      (let [values (atom [])]
         (-> (p/range 1 10)
             (p/subscribe
-              #(reset! cnt (conj @cnt %))
+              (fn [value]
+                (swap! values conj value))
               (fn [_])
               (fn []
-                (t/is (= @cnt [1 2 3 4 5 6 7 8 9 10]))
+                (t/is (= @values [1 2 3 4 5 6 7 8 9 10]))
                 (done))))))))
 
-(t/deftest reducers-test
-  (async done
-    (let [reduced-flux (reduce + 0 (r/map inc (r/filter even? (p/range 1 9))))]
-      (-> reduced-flux
-          (p/subscribe #(t/is (= 24 %))
-                       (fn [e]
-                         (t/is false e)
-                         (done))
-                       done)))))
+(t/deftest array-test
+  (t/testing "consume array."
+    (async done
+      (let [values (atom [])]
+        (-> (p/flux (into-array [1 2 3]))
+            (p/subscribe
+              (fn [value]
+                (swap! values conj value))
+              (fn [_]
+                (t/is false))
+              (fn []
+                (t/is (= @values [1 2 3]))
+                (done))))))))
+
+(t/deftest mapcat-test
+  (t/testing "normal"
+    (async done
+      (let [values (atom [])]
+        (-> (p/range 1 2)
+            (p/mapcat #(p/range % 2))
+            (p/subscribe
+              (fn [value]
+                (swap! values conj value))
+              (fn [_]
+                (t/is false))
+              (fn []
+                (t/is (= @values [1 2 2 3]))
+                (done))))))))
+;#?(:clj
+;   (t/deftest zip-test
+;     (t/testing "zip"
+;       (async done
+;              (let [values (atom [])]
+;                (-> (p/zip (p/just 1) (p/just "test"))
+;                    (p/subscribe (fn [value]
+;                                   (swap! values conj value))
+;                                 (fn [_])
+;                                 (fn []
+;                                   (t/is (= @values [[1 "test"]]))
+;                                   (done)))))))))
 
 (t/deftest even-numbers-test
   (t/testing "finishes"
@@ -79,16 +114,3 @@
                      (fn []
                        (t/is false "on-complete")
                        (done)))))))
-
-(comment
-  (defmacro subscribe [s & body])
-
-
-  (t/deftest use-test-subscribe
-    (subscribe s
-               (p/subscribe-with (p/range 1 10) s)
-               (t/is (= [1 2 3 4 5 6 7 8 9 10] (values s)))
-               (t/is (empty? (errors s)))
-               (t/is (complete? s)))))
-
-#?(:cljs (t/run-tests 'reactor-core.publisher-test))

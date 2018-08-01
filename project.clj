@@ -24,16 +24,16 @@
                  [io.projectreactor/reactor-core "3.1.8.RELEASE"]]
   :target-path "target/%s"
   :profiles {:1.8  {:dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]]}
-             :cljs {:dependencies [[org.clojure/clojurescript "1.10.339" :scope "provided"]]
-                    :plugins      [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
-                    :cljsbuild    {:test-commands {"publisher" ["node" "target/publisher-tests.js"]}
-                                   :builds        {:test {:source-paths   ["src" "test"]
-                                                          :notify-command ["node" "target/publisher-tests.js"]
-                                                          :compiler       {:install-deps  true
-                                                                           :output-to     "target/publisher-tests.js"
-                                                                           :optimizations :none
-                                                                           :target        :nodejs
-                                                                           :main          reactor-core.publisher-test}}}}}
+             :cljs {:managed-dependencies [[com.google.javascript/closure-compiler-unshaded "v20180716"]]
+                    :dependencies         [[org.clojure/clojurescript "1.10.339" :scope "provided"]]
+                    :plugins              [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
+                    :cljsbuild            {:test-commands {"run" ["node" "target/test-runner.js"]}
+                                           :builds        [{:source-paths   ["src" "test"]
+                                                            :notify-command ["node" "target/test-runner.js"]
+                                                            :compiler       {:install-deps  true
+                                                                             :output-to     "target/test-runner.js"
+                                                                             :optimizations :none
+                                                                             :target        :nodejs
+                                                                             :main          test-runner}}]}}
              :dev  {:dependencies [[com.fzakaria/slf4j-timbre "0.3.12"]]
                     :plugins      [[lein-cloverage "1.0.11"]]}})
-

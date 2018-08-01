@@ -18,35 +18,44 @@
   ^{:doc    ""
     :author "Vladimir Tsanev"}
   reactor-core.publisher
-  (:refer-clojure :exclude [concat empty filter map range reduce take])
+  (:refer-clojure :exclude [concat empty filter map mapcat range reduce take])
   (:require
-    ["reactor-core-js/reactivestreams-spec" :refer [Publisher]]
+    [reactor-core.protocols :as p :refer [Fluxable to-flux]]
+    [reactor-core.reactive-streams :refer [IPublisher]]
     ["reactor-core-js/flux" :refer [Flux Mono]]
     ["reactor-core-js/subscriber" :refer [CallbackSubscriber]]))
 
-(defn mono?
-  [p]
-  (instance? Mono p))
-
-(defn flux?
-  [p]
-  (instance? Flux p))
-
-(defn never
-  []
-  (.never Flux))
-
-(defn empty
-  []
-  (.empty Flux))
+(set! *warn-on-infer* true)
 
 (defn just
   [data]
   (.just Flux data))
 
+(defn empty
+  []
+  (.empty Flux))
+
+(defn never
+  []
+  (.never Flux))
+
 (defn error
   [error]
   (.fromCallable Flux (fn [] (throw error))))
+
+(extend-protocol p/Fluxable
+  Flux
+  (to-flux [flux] flux)
+  IPublisher
+  (to-flux [source] (.from Flux source)))
+
+(defn flux
+  [source]
+  (cond
+    (satisfies? Fluxable source) (p/to-flux source)
+    (array? source) (.fromArray Flux source)
+    (nil? source) (empty)
+    :else (.just Flux source)))
 
 (defn interval
   [delay period]
@@ -76,6 +85,10 @@
   [^Flux flux mapper]
   (.map flux mapper))
 
+(defn mapcat
+  [^Flux flux mapper]
+  (.concatMap flux mapper))
+
 (defn flat-map
   [^Flux flux mapper]
   (.flatMap flux mapper))
@@ -102,10 +115,3 @@
   ([^Publisher p on-next on-error on-complete]
    (.subscribe p (new CallbackSubscriber on-next on-error on-complete))))
 
-(extend-protocol IReduce
-  Flux
-  (-reduce
-    ([this f]
-     (reduce this f))
-    ([this f start]
-     (reduce this start f))))
