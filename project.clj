@@ -23,8 +23,7 @@
   :dependencies [[org.clojure/clojure "1.9.0" :scope "provided"]
                  [io.projectreactor/reactor-core "3.1.8.RELEASE"]]
   :target-path "target/%s"
-  :profiles {:1.8  {:dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]]}
-             :cljs {:managed-dependencies [[com.google.javascript/closure-compiler-unshaded "v20180716"]]
+  :profiles {:cljs {:managed-dependencies [[com.google.javascript/closure-compiler-unshaded "v20180716"]]
                     :dependencies         [[org.clojure/clojurescript "1.10.339" :scope "provided"]]
                     :plugins              [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
                     :cljsbuild            {:test-commands {"run" ["node" "target/test-runner.js"]}
