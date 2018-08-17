@@ -20,7 +20,6 @@
   reactor-core.util.core)
 
 (defn ^boolean array?
-  "Returns true if x is array."
+  "Returns true if x is array. Like cljs.core/array? but on jvm"
   [x]
   (.isArray (class x)))
-

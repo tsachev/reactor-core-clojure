@@ -15,28 +15,24 @@
 ;
 
 (ns
-  ^{:doc    "reduce(rs) support."
+  ^{:doc    "Reactive Streams Spec"
     :author "Vladimir Tsanev"}
-  reactor-core.reducers
-  (:refer-clojure :exclude [reduce])
-  (:require [reactor-core.publisher :refer [reduce]]
-            #?(:cljs ["reactor-core-js/flux" :refer [Flux]]))
-  #?(:clj
-     (:import (reactor.core.publisher Flux))))
+  reactive-streams.core)
 
-#?(:cljs
-   (extend-protocol IReduce
-     Flux
-     (-reduce
-       ([this f]
-        (reduce f this))
-       ([this f start]
-        (reduce f start this))))
-   :clj
-   (extend-protocol clojure.core.protocols/CollReduce
-     Flux
-     (coll-reduce
-       ([this f]
-        (reduce f this))
-       ([this f start]
-        (reduce f start this)))))
+(defprotocol ISubscription
+  ""
+  (request [subscription n])
+  (cancel [subscription]))
+
+(defprotocol ISubscriber
+  (on-subscribe [subscriber ^ISubscription subscription])
+  (on-next [subscriber item])
+  (on-error [subscriber error])
+  (on-complete [subscriber]))
+
+(defprotocol IPublisher
+  (subscribe [publisher ^ISubscriber subscriber]))
+
+(defn processor? [p]
+  (and (satisfies? IPublisher p)
+       (satisfies? ISubscriber p)))

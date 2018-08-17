@@ -19,7 +19,8 @@
     :author "Vladimir Tsanev"}
   reactor-core.reducer-test
   #?(:cljs (:require-macros [cljs.test :refer [async]]))
-  #?(:clj  (:use [reactor-core.test :only [async]]))
+  #?(:clj
+     (:use [reactor-core.test :only [async]]))
   (:require
     #?(:cljs [cljs.test :as t]
        :clj [clojure.test :as t])
@@ -33,10 +34,13 @@
 (t/deftest reducers-test
   (async done
     (let [reduced-flux (reduce + 0 (r/map inc (r/filter even? (p/range 1 9))))]
-      (-> reduced-flux
-          (p/subscribe (fn [value]
-                         (t/is (= 24 value)))
-                       (fn [e]
-                         (t/is false e)
-                         (done))
-                       done)))))
+      (->> reduced-flux
+           (p/subscribe (fn [value]
+                          (t/is (= 24 value)))
+                        (fn [e]
+                          (t/is false e)
+                          (done))
+                        done)))))
+
+(comment
+  (reduce + 0 (range 1 5)))

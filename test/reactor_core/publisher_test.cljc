@@ -21,9 +21,10 @@
   #?(:cljs (:require-macros [cljs.test :refer [async]])
      :clj
            (:use [reactor-core.test :only [async]]))
-  (:require #?(:cljs [cljs.test :as t]
-               :clj [clojure.test :as t])
-                    [reactor-core.publisher :as p]))
+  (:require
+    #?(:cljs [cljs.test :as t]
+       :clj [clojure.test :as t])
+            [reactor-core.publisher :as p]))
 
 #?(:cljs (set! *warn-on-infer* true)
    :clj  (set! *warn-on-reflection* true))
@@ -32,85 +33,79 @@
   (t/testing "consume range."
     (async done
       (let [values (atom [])]
-        (-> (p/range 1 10)
-            (p/subscribe
-              (fn [value]
-                (swap! values conj value))
-              (fn [_])
-              (fn []
-                (t/is (= @values [1 2 3 4 5 6 7 8 9 10]))
-                (done))))))))
+        (->> (p/range 1 10)
+             (p/subscribe
+               (fn [value]
+                 (swap! values conj value))
+               (fn [_])
+               (fn []
+                 (t/is (= @values [1 2 3 4 5 6 7 8 9 10]))
+                 (done))))))))
+
+(t/deftest error-test
+  (t/testing "consume error"
+    (async done
+      (->> (p/error (ex-info "test" {}))
+           (p/subscribe
+             (fn [_] (t/is false))
+             (fn [e]
+               (t/is (thrown-with-msg? #?(:clj Exception :cljs js/Error) #"test" (throw e)))
+               (done))
+             (fn [] (t/is false)))))))
+
+(t/deftest empty-test
+  (t/testing "consume empty"
+    (async done
+      (->> (p/empty)
+           (p/subscribe
+             (fn [_] (t/is false))
+             (fn [_] (t/is false))
+             (fn [] (t/is true)
+               (done)))))))
 
 (t/deftest array-test
   (t/testing "consume array."
     (async done
       (let [values (atom [])]
-        (-> (p/flux (into-array [1 2 3]))
-            (p/subscribe
-              (fn [value]
-                (swap! values conj value))
-              (fn [_]
-                (t/is false))
-              (fn []
-                (t/is (= @values [1 2 3]))
-                (done))))))))
-
-(t/deftest mapcat-test
-  (t/testing "normal"
-    (async done
-      (let [values (atom [])]
-        (-> (p/range 1 2)
-            (p/mapcat #(p/range % 2))
-            (p/subscribe
-              (fn [value]
-                (swap! values conj value))
-              (fn [_]
-                (t/is false))
-              (fn []
-                (t/is (= @values [1 2 2 3]))
-                (done))))))))
-;#?(:clj
-;   (t/deftest zip-test
-;     (t/testing "zip"
-;       (async done
-;              (let [values (atom [])]
-;                (-> (p/zip (p/just 1) (p/just "test"))
-;                    (p/subscribe (fn [value]
-;                                   (swap! values conj value))
-;                                 (fn [_])
-;                                 (fn []
-;                                   (t/is (= @values [[1 "test"]]))
-;                                   (done)))))))))
+        (->> (p/from (into-array [1 2 3]))
+             (p/subscribe
+               (fn [value]
+                 (swap! values conj value))
+               (fn [_]
+                 (t/is false))
+               (fn []
+                 (t/is (= @values [1 2 3]))
+                 (done))))))))
 
 (t/deftest even-numbers-test
   (t/testing "finishes"
     (async done
-      (let [even-numbers (p/filter (p/range 1 6) even?)
+      (let [even-numbers (p/filter even? (p/range 1 6))
             noop (fn [_])]
-        (p/subscribe even-numbers noop noop done))))
+        (p/subscribe noop noop done even-numbers))))
 
   (t/testing "has 3 numbers"
     (async done
       (let [cnt (atom 0)
-            even-numbers (p/filter (p/range 1 6) even?)
+            even-numbers (p/filter even? (p/range 1 6))
             on-number (fn [_] (reset! cnt (inc @cnt)))]
-        (p/subscribe even-numbers
-                     on-number
+        (p/subscribe on-number
                      (constantly nil)
                      (fn []
                        (t/is (= 3 @cnt) "got 3 numbers")
-                       (done))))))
+                       (done))
+                     even-numbers))))
   (t/testing "has no errors"
     (async done
-      (let [even-numbers (-> (p/range 1 6)
-                             (p/filter even?)
-                             (p/map (fn [_]
-                                      (throw (ex-info "oh no" {})))))]
-        (p/subscribe even-numbers
-                     (fn [_])
+      (let [even-numbers (->> (p/range 1 6)
+                              (p/filter even?)
+                              (p/map (fn [_]
+                                       (throw (ex-info "oh no" {})))))]
+        (p/subscribe (fn [_])
                      (fn [e]
                        (t/is (thrown-with-msg? #?(:clj Exception :cljs js/Error) #"oh no" (throw e)))
                        (done))
                      (fn []
                        (t/is false "on-complete")
-                       (done)))))))
+                       (done))
+                     even-numbers)))))

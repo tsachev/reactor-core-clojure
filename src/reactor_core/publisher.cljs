@@ -18,11 +18,11 @@
   ^{:doc    ""
     :author "Vladimir Tsanev"}
   reactor-core.publisher
-  (:refer-clojure :exclude [concat empty filter map mapcat range reduce take])
+  (:refer-clojure :exclude [concat delay empty filter map mapcat range reduce take])
   (:require
-    [reactor-core.protocols :as p :refer [Fluxable to-flux]]
-    [reactor-core.reactive-streams :refer [IPublisher]]
-    ["reactor-core-js/flux" :refer [Flux Mono]]
+    [reactor-core.protocols :as p]
+    [reactive-streams.js :refer [Publisher Subscriber]]
+    ["reactor-core-js/flux" :refer [Flux DirectProcessor]]
     ["reactor-core-js/subscriber" :refer [CallbackSubscriber]]))
 
 (set! *warn-on-infer* true)
@@ -40,78 +40,160 @@
   (.never Flux))
 
 (defn error
-  [error]
-  (.fromCallable Flux (fn [] (throw error))))
+  ([error-or-fn]
+   (error error-or-fn false))
+  ([error-or-fn when-requested?]
+   (if when-requested?
+     (.doOnNext (just nil) (fn [_] (throw (if (fn? error-or-fn) (error-or-fn) error-or-fn))))
+     (.doOnSubscribe (empty) (fn [_] (throw (if (fn? error-or-fn) (error-or-fn) error-or-fn)))))))
 
-(extend-protocol p/Fluxable
+(extend-protocol Publisher
   Flux
-  (to-flux [flux] flux)
-  IPublisher
-  (to-flux [source] (.from Flux source)))
+  (subscribe [flux subscriber]
+    ;(println "subscribe" flux "with" subscriber)
+    (.subscribe ^Flux flux subscriber)))
 
-(defn flux
-  [source]
-  (cond
-    (satisfies? Fluxable source) (p/to-flux source)
-    (array? source) (.fromArray Flux source)
-    (nil? source) (empty)
-    :else (.just Flux source)))
+(defn from-dispatch-fn [x]
+  (if (array? x)
+    ::array
+    (type x)))
+
+(defmulti from "" ^Publisher from-dispatch-fn)
+
+(defmethod from ::array [a] (.fromArray Flux a))
+
+(extend-type Flux
+  p/MapOperator
+  (-map [flux transformer]
+    (.map flux transformer))
+  p/FlatMapOperator
+  (-flat-map [flux mapper]
+    (.flatMap flux mapper))
+  (-concat-map [flux mapper]
+    (.concatMap flux mapper))
+  (-concat-map [flux mapper prefetch]
+    (.concatMap flux mapper prefetch))
+  p/FilterOperator
+  (-filter [flux predicate] (.filter flux predicate))
+  p/TakeOperator
+  (-take [flux n] (.take flux ^long n))
+  p/SkipOperator
+  (-skip [flux n] (.skip flux ^long n))
+  p/ZipOperator
+  (-zip-with [flux other combinator] (.zipWith flux other combinator))
+  p/HideOperator
+  (-hide [flux] (.hide flux))
+  p/TakeUntilOperator
+  (-take-until [flux other] (.takeUntil flux other)))
 
 (defn interval
-  [delay period]
-  (.interval Flux delay period))
+  ([period]
+   (interval period period))
+  ([delay period]
+   (.interval Flux delay period)))
+
+(defn delay
+  [delay]
+  (.timer Flux delay))
 
 (defn concat
   [sources]
   (.concat Flux sources))
 
+(extend-type DirectProcessor
+  Subscriber
+  (onSubscribe [p s] (.onSubscribe p s))
+  (onNext [p t] (.onNext p t))
+  (onError [p t] (.onError p t))
+  (onComplete [p] (.onComplete p)))
+
+(defn mono-processor
+  ([]
+   (let [p (new DirectProcessor)]
+     (specify! p
+       Subscriber
+       (onNext [_ item]
+         (.onNext p item)
+         (.onComplete p)))
+     (reactive-streams.js/->ISubscriber p))))
+
+(defn zip
+  ([sources zipper]
+   (cond
+     (= 2 (count sources))
+     (.zip2 Flux (first sources) (second sources) (fn [a1 a2]
+                                                    (zipper a1 a2)))
+     :else
+     (.zip Flux (apply array sources) (fn [args]
+                                        (zipper args)))))
+  ([sources zipper prefetch]
+   (.zip Flux (apply array sources) (fn [args]
+                                      (zipper args)) prefetch)))
+
+
 (defn range
   [start count]
   (.range Flux start count))
 
+;; filtering
 (defn filter
-  [^Flux flux p]
-  (.filter flux p))
+  [predicate publisher]
+  (p/-filter publisher predicate))
 
 (defn skip
-  [^Flux flux ^long skipped]
-  (.skip flux skipped))
+  [skipped publisher]
+  (p/-skip publisher skipped))
 
 (defn take
-  [^Flux flux ^long n]
-  (.take flux n))
+  [n publisher]
+  (p/-take publisher n))
 
+;; transforming
 (defn map
-  [^Flux flux mapper]
-  (.map flux mapper))
+  [mapper publisher]
+  (p/-map publisher mapper))
 
 (defn mapcat
-  [^Flux flux mapper]
-  (.concatMap flux mapper))
+  ([mapper publisher]
+   (p/-concat-map publisher mapper)))
 
 (defn flat-map
-  [^Flux flux mapper]
-  (.flatMap flux mapper))
+  [mapper publisher]
+  (p/-flat-map flux mapper))
 
 (defn hide
-  [^Flux flux]
-  (.hide flux))
+  [publisher]
+  (p/-hide publisher))
 
-(defn concat-map
-  [^Flux flux mapper]
-  (.concatMap flux mapper))
+;; conditional
+(defn take-until
+  [other publisher]
+  (p/-take-until publisher other))
 
+;; aggregate
 (defn reduce
-  ([^Flux flux aggregator]
-   (reduce flux js/undefined aggregator))
-  ([^Flux flux initial accumulator]
+  ([aggregator ^Flux flux]
+   (reduce aggregator js/undefined flux))
+  ([accumulator initial ^Flux flux]
    (.reduce flux (fn [] initial) accumulator)))
 
-(defn subscribe
-  ([^Publisher p on-next]
-   (subscribe p on-next (fn [_])))
-  ([^Publisher p on-next on-error]
-   (subscribe p on-next on-error (fn [])))
-  ([^Publisher p on-next on-error on-complete]
-   (.subscribe p (new CallbackSubscriber on-next on-error on-complete))))
+;(extend-type CallbackSubscriber
+;  Subscriber
+;  (onSubscribe [this s] (.onSubscribe this s))
+;  (onNext [this t] (.onNext [this t]))
+;  (onError [this ^js/Error t] (.onError this t))
+;  (onComplete [this] (.onComplete this)))
 
+(defn subscribe
+  ([on-next ^Publisher p]
+   (subscribe on-next (fn [_]) p))
+  ([on-next on-error ^Publisher p]
+   (subscribe on-next on-error (fn []) p))
+  ([on-next on-error on-complete ^Publisher p]
+   (cond
+     ;(instance? Flux p)
+     ;(.subscribe ^Flux p
+     ;            (new CallbackSubscriber on-next on-error on-complete))
+     :else
+     (reactive-streams.js/subscribe p
+                                    (new CallbackSubscriber on-next on-error on-complete)))))

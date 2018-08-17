@@ -14,7 +14,7 @@
 ; limitations under the License.
 ;
 
-(defproject io.tsachev/reactor-core-clojure "0.1.0-SNAPSHOT"
+(defproject io.tsachev.reactor/reactor-core-clojure "0.1.0-SNAPSHOT"
   :description "A Clojure(Script) for for Reactor Flux and Mono"
   :url "https://github.com/tsachev/reactor-core-clojure"
   :license {:name         "The Apache Software License, Version 2.0"
@@ -34,6 +34,6 @@
                                                                              :output-to     "target/test-runner.js"
                                                                              :optimizations :none
                                                                              :target        :nodejs
-                                                                             :main          test-runner}}]}}
+                                                                             :main          reactor-core.test-runner}}]}}
              :dev  {:dependencies [[com.fzakaria/slf4j-timbre "0.3.12"]]
                     :plugins      [[lein-cloverage "1.0.11"]]}})

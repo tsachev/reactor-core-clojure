@@ -15,15 +15,23 @@
 ;
 
 (ns
-  ^{:doc    "Run cljs tests."
+  ^{:doc    "A test-case for processors."
     :author "Vladimir Tsanev"}
-  test-runner
+  reactor-core.processor-test
+  #?(:cljs (:require-macros [cljs.test :refer [async]])
+     :clj  (:use [reactor-core.test :only [async]]))
   (:require
-    [cljs.test :refer-macros [run-tests]]
-    [reactor-core.publisher-test]
-    [reactor-core.reducer-test]))
+    #?(:cljs [cljs.test :as t]
+       :clj [clojure.test :as t])
+            [reactor-core.publisher :as reactor]
+            [reactive-streams.core :as rx]))
 
-(enable-console-print!)
-
-(run-tests 'reactor-core.reducer-test
-           'reactor-core.publisher-test)
+(t/deftest test-mono-processor
+  (async done
+    (let [mp (reactor/mono-processor)]
+      (reactor/subscribe
+        (fn [value]
+          (t/is (= "test" value))
+          (done))
+        mp)
+      (rx/on-next mp "test"))))

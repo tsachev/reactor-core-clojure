@@ -21,50 +21,50 @@
   (:import
     (java.util.function Consumer BiFunction Predicate Function LongFunction BiPredicate LongConsumer Supplier BooleanSupplier BiConsumer)))
 
-(defn as-predicate
+(defn as-predicate ^Predicate
   [p]
   (if (or (nil? p) (instance? Predicate p)) p (reify Predicate (test [_ t] (p t)))))
 
-(defn as-bi-predicate
+(defn as-bi-predicate ^BiPredicate
   [p]
   (if (or (nil? p) (instance? BiPredicate p)) p (reify BiPredicate (test [_ t u] (p t u)))))
 
-(defn as-function
+(defn as-function ^Function
   [f]
   (if (or (nil? f) (instance? Function f)) f (reify Function (apply [_ t] (f t)))))
 
-(defn as-long-function
+(defn as-long-function ^LongFunction
   [f]
   (if (or (nil? f) (instance? LongFunction f)) f (reify LongFunction (apply [_ value] (f value)))))
 
-(defn ^BiFunction as-bi-function
+(defn ^BiFunction as-bi-function ^BiFunction
   [f]
   (if (or (nil? f) (instance? BiFunction f)) f (reify BiFunction (apply [_ t u] (f t u)))))
 
-(defn as-consumer
+(defn as-consumer ^Consumer
   [c]
   (if (or (nil? c) (instance? Consumer c)) c (reify Consumer (accept [_ t] (c t)))))
 
-(defn as-long-consumer
+(defn as-long-consumer ^LongConsumer
   [c]
   (if (or (nil? c) (instance? LongConsumer c)) c (reify LongConsumer (accept [_ value] (c value)))))
 
-(defn as-bi-consumer
+(defn as-bi-consumer ^BiConsumer
   [c]
   (if (or (nil? c) (instance? BiConsumer c)) c (reify BiConsumer (accept [_ t u] (c t u)))))
 
-(defn as-runnable
+(defn as-runnable ^Runnable
   [r]
   (if (or (nil? r) (instance? Runnable r)) r (reify Runnable (run [_] (r)))))
 
-(defn as-callable
+(defn as-callable ^Callable
   [c]
   (if (or (nil? c) (instance? Callable c)) c (reify Callable (call [_] (c)))))
 
-(defn as-supplier
+(defn as-supplier ^Supplier
   [s]
   (if (or (nil? s) (instance? Supplier s)) s (reify Supplier (get [_] (s)))))
 
-(defn as-boolean-supplier
+(defn as-boolean-supplier ^BooleanSupplier
   [s]
   (if (or (nil? s) (instance? BooleanSupplier s)) s (reify BooleanSupplier (getAsBoolean [_] (s)))))

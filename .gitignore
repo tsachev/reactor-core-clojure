@@ -18,3 +18,5 @@ node_modules/
 .project
 .classpath
 .settings/
+
+.cljs_node_repl/
